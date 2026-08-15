@@ -1,0 +1,69 @@
+<!-- Tệp cấu hình dự án (Project File): Chứa các thư viện và thiết lập nền tảng để chạy App. -->
+<Project Sdk="Microsoft.NET.Sdk">
+ 
+  <PropertyGroup>
+    <!-- Loại đầu ra: WinExe (Ứng dụng có cửa sổ giao diện trên Windows). -->
+    <OutputType>WinExe</OutputType>
+    
+    <!-- Nền tảng đích: Sử dụng .NET mới nhất dành cho Windows. -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+    
+    <!-- Icon của ứng dụng -->
+    <ApplicationIcon>app_icon.ico</ApplicationIcon>
+    
+    <!-- Cho phép kiểm tra biến rỗng (Null) để tránh lỗi văng App bất ngờ. -->
+    <Nullable>enable</Nullable>
+    
+    <!-- Kích hoạt tính năng Windows Forms để kéo thả giao diện. -->
+    <UseWindowsForms>true</UseWindowsForms>
+    
+    <!-- Tự động thêm các thư viện hệ thống cơ bản mà không cần viết lệnh 'using' quá nhiều. -->
+    <ImplicitUsings>enable</ImplicitUsings>
+    
+    <!-- Không tính các tệp trong thư mục Test vào dự án chính khi đóng gói sản phẩm. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);ImportData.Tests\**</DefaultItemExcludes>
+    
+    <!-- Hỗ trợ đóng gói Self-Contained cho Windows 64-bit -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <PublishReadyToRun>true</PublishReadyToRun>
+  </PropertyGroup>
+ 
+  <ItemGroup>
+    <!-- THƯ VIỆN BÊN NGOÀI (NuGet Packages) -->
+    <!-- ExcelDataReader: Công cụ để đọc file Excel từ máy đo. -->
+    <PackageReference Include="ExcelDataReader" Version="3.8.0" />
+    <PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
+    
+    <!-- Microsoft.Data.SqlClient: Công cụ để kết nối và đẩy dữ liệu vào SQL Server. -->
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.4" />
+    
+    <!-- Các thư viện hỗ trợ đọc file cấu hình Json (appsettings.json). -->
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.5" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Yêu cầu Windows luôn sao chép file cấu hình appsettings.json ra thư mục chạy để App tìm thấy. -->
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Include="app_icon.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>ImportData.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

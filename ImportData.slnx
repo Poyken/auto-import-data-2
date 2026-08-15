@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ImportData.csproj" />
+  <Project Path="ImportData.Tests/ImportData.Tests.csproj" />
+</Solution>
