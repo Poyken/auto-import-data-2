@@ -24,31 +24,16 @@ namespace ImportData.Tests
 
         [Theory]
         [InlineData("equipmentnumber", "EquipmentNumber")]
-        [InlineData("devname", "EquipmentNumber")]
-        [InlineData("eqpno", "EquipmentNumber")]
-        [InlineData("machineid", "EquipmentNumber")]
-        [InlineData("sorternum", "SorterNum")]
-        [InlineData("sortnum", "SorterNum")]
-        [InlineData("lotno", "Barcode")]
+        [InlineData("position", "Position")]
+        [InlineData("channel", "Channel")]
+        [InlineData("trayid", "TrayID")]
         [InlineData("barcode", "Barcode")]
-        [InlineData("lotid", "Barcode")]
-        [InlineData("cellid", "Barcode")]
-        [InlineData("chargeendcurrentma", "ChargeEndCurrent_mA")]
-        [InlineData("chargeendcurrent", "ChargeEndCurrent_mA")]
-        [InlineData("starttime", "StartTime")]
-        [InlineData("workflowcode", "WorkflowCode")]
-        [InlineData("nginfo", "NGInfo")]
-        [InlineData("esrmω", "ESR_mOhm")]
-        [InlineData("esrmohm", "ESR_mOhm")]
-        [InlineData("esr", "ESR_mOhm")]
-        [InlineData("ocvmv", "OCV_mV")]
-        [InlineData("ocv", "OCV_mV")]
-        [InlineData("esrtime", "ESRTime")]
+        [InlineData("worksteptime", "CCCVChg_WorkstepTime")]
+        [InlineData("capacitymah", "CCDchg_Capacity_mAh")]
+        [InlineData("capacitancef", "CCDchg_Capacitance_F")]
         public void Test_AliasToSqlColumnMap_CorrectMapping(string alias, string expectedSqlColumn)
         {
-            // Kiểm tra ánh xạ alias sang tên cột SQL
             bool hasMapping = DatabaseService.AliasToSqlColumnMap.TryGetValue(alias, out string? sqlCol);
-            
             Assert.True(hasMapping, $"Thiếu ánh xạ cho alias: '{alias}'");
             Assert.Equal(expectedSqlColumn, sqlCol);
         }

@@ -11,20 +11,20 @@ namespace ImportData.Services
 {
     public class DatabaseService
     {
-        private const string TableData = "SortingDataImportExcel";
-        private const string TableHistory = "ExcelImportHistory";
+        private const string TableData = "SortingDataImportExcel_V2";
+        private const string TableHistory = "ExcelImportHistory_V2";
 
         // Số lần retry tối đa khi gặp lỗi SQL transient
         private const int MaxRetryCount = 3;
         // Delay cơ bản giữa các lần retry (sẽ nhân lên theo cấp số nhân)
         private static readonly int[] RetryDelaysMs = { 2000, 5000, 10000 };
 
-        private static readonly string[] SqlColumns = {
-            "EquipmentNumber", "SorterNum", "StartTime", "WorkflowCode",
-            "Barcode", "Slot", "Position", "Channel", "Capacity_mAh", "Capacitance_F", 
-            "BeginVoltageSD_mV", "ChargeEndCurrent_mA", "EndVoltage_mV", "EndCurrent_mA", "DischargeVoltage1_mV", 
-            "DischargeVoltage1_Time", "DischargeVoltage2_mV", "DischargeVoltage2_Time", "DischargeBeginVoltage_mV", "DischargeBeginCurrent_mA", 
-            "NGInfo", "EndTime", "FilePath", "ImportDate", "ESR_mOhm", "OCV_mV", "ESRTime"
+        public static readonly string[] SqlColumns = {
+            "EquipmentNumber", "Position", "Channel", "TrayID", "Barcode",
+            "CCCVChg_WorkstepTime", "CCCVChg_StopReason", "CCCVChg_BeginVoltage_mV", "CCCVChg_EndVoltage_mV", "CCCVChg_BeginTime", "CCCVChg_EndTime", "CCCVChg_BeginDKVoltage_mV", "CCCVChg_BeginCurrent_mA", "CCCVChg_EndCurrent_mA", "CCCVChg_EndDKVoltage_mV",
+            "CCDchg_WorkstepTime", "CCDchg_StopReason", "CCDchg_BeginVoltage_mV", "CCDchg_EndVoltage_mV", "CCDchg_BeginTime", "CCDchg_EndTime", "CCDchg_BeginCurrent_mA", "CCDchg_EndCurrent_mA", "CCDchg_Capacity_mAh", "CCDchg_Capacitance_F", "CCDchg_Capacitance1_F", "CCDchg_CapacitanceVoltage2_mV", "CCDchg_Capacitance2_F", "CCDchg_Capacitance3_F", "CCDchg_Capacitance4_F",
+            "Rest_WorkstepTime", "Rest_StopReason", "Rest_BeginVoltage_mV", "Rest_EndVoltage_mV", "Rest_BeginTime", "Rest_EndTime", "Rest_BeginDKVoltage_mV",
+            "FilePath", "ImportDate"
         };
 
         /// <summary>
@@ -43,59 +43,62 @@ namespace ImportData.Services
         }
 
         /// <summary>
-        /// Bảng alias: Ánh xạ từ tên cột Excel (đã chuẩn hóa) sang tên cột SQL.
-        /// Hỗ trợ cả 2 định dạng máy đo: Format 1 (Equipment Number) và Format 2 (DevName).
+        /// Bảng alias: Ánh xạ từ tên cột Excel (đã chuẩn hóa) sang tên cột SQL V2.
         /// </summary>
         internal static readonly Dictionary<string, string> AliasToSqlColumnMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            // --- Cột thiết bị (Equipment) ---
+            // --- Cột thiết bị & vị trí ---
             { "equipmentnumber", "EquipmentNumber" },
             { "devname", "EquipmentNumber" },
-            { "eqpno", "EquipmentNumber" },
-            { "machineid", "EquipmentNumber" },
-            // --- Cột Sorter ---
-            { "sorternum", "SorterNum" },
-            { "sortnum", "SorterNum" },
-            // --- Các cột dữ liệu đo ---
-            { "starttime", "StartTime" },
-            { "workflowcode", "WorkflowCode" },
+            { "position", "Position" },
+            { "channel", "Channel" },
+            { "trayid", "TrayID" },
             { "barcode", "Barcode" },
             { "lotno", "Barcode" },
             { "lotid", "Barcode" },
             { "cellid", "Barcode" },
-            { "slot", "Slot" },
-            { "position", "Position" },
-            { "channel", "Channel" },
-            { "capacitymah", "Capacity_mAh" },
-            { "capmah", "Capacity_mAh" },
-            { "capacity", "Capacity_mAh" },
-            { "capacitancef", "Capacitance_F" },
-            { "capf", "Capacitance_F" },
-            { "capacitance", "Capacitance_F" },
-            { "beginvoltagesdmv", "BeginVoltageSD_mV" },
-            { "beginvoltagesd", "BeginVoltageSD_mV" },
-            { "chargeendcurrentma", "ChargeEndCurrent_mA" },
-            { "chargeendcurrent", "ChargeEndCurrent_mA" },
-            { "endvoltagemv", "EndVoltage_mV" },
-            { "endvoltage", "EndVoltage_mV" },
-            { "endcurrentma", "EndCurrent_mA" },
-            { "endcurrent", "EndCurrent_mA" },
-            { "dischargevoltage1mv", "DischargeVoltage1_mV" },
-            { "dischargevoltage1", "DischargeVoltage1_mV" },
-            { "dischargevoltage2mv", "DischargeVoltage2_mV" },
-            { "dischargevoltage2", "DischargeVoltage2_mV" },
-            { "dischargebeginvoltagemv", "DischargeBeginVoltage_mV" },
-            { "dischargebeginvoltage", "DischargeBeginVoltage_mV" },
-            { "dischargebegincurrentma", "DischargeBeginCurrent_mA" },
-            { "dischargebegincurrent", "DischargeBeginCurrent_mA" },
-            { "esrmω", "ESR_mOhm" },
-            { "esrmohm", "ESR_mOhm" },
-            { "esr", "ESR_mOhm" },
-            { "ocvmv", "OCV_mV" },
-            { "ocv", "OCV_mV" },
-            { "esrtime", "ESRTime" },
-            { "nginfo", "NGInfo" },
-            { "endtime", "EndTime" }
+
+            // --- 1. CCCVChg ---
+            { "worksteptime", "CCCVChg_WorkstepTime" },
+            { "stopreason", "CCCVChg_StopReason" },
+            { "beginvoltagemv", "CCCVChg_BeginVoltage_mV" },
+            { "endvoltagemv", "CCCVChg_EndVoltage_mV" },
+            { "begintime", "CCCVChg_BeginTime" },
+            { "endtime", "CCCVChg_EndTime" },
+            { "begindkvoltagemv", "CCCVChg_BeginDKVoltage_mV" },
+            { "begincurrentma", "CCCVChg_BeginCurrent_mA" },
+            { "endcurrentma", "CCCVChg_EndCurrent_mA" },
+            { "enddkvoltagemv", "CCCVChg_EndDKVoltage_mV" },
+
+            // --- 2. CCDchg ---
+            { "worksteptime_1", "CCDchg_WorkstepTime" },
+            { "stopreason_1", "CCDchg_StopReason" },
+            { "beginvoltagemv_1", "CCDchg_BeginVoltage_mV" },
+            { "endvoltagemv_1", "CCDchg_EndVoltage_mV" },
+            { "begintime_1", "CCDchg_BeginTime" },
+            { "endtime_1", "CCDchg_EndTime" },
+            { "begincurrentma_1", "CCDchg_BeginCurrent_mA" },
+            { "endcurrentma_1", "CCDchg_EndCurrent_mA" },
+            { "capacitymah", "CCDchg_Capacity_mAh" },
+            { "capacitancef", "CCDchg_Capacitance_F" },
+            { "capacitance1f", "CCDchg_Capacitance1_F" },
+            { "capacitancevoltage2mv", "CCDchg_CapacitanceVoltage2_mV" },
+            { "capacitance2f", "CCDchg_Capacitance2_F" },
+            { "capacitance3f", "CCDchg_Capacitance3_F" },
+            { "capacitance4f", "CCDchg_Capacitance4_F" },
+
+            // --- 3. Rest ---
+            { "worksteptime_2", "Rest_WorkstepTime" },
+            { "stopreason_2", "Rest_StopReason" },
+            { "beginvoltagemv_2", "Rest_BeginVoltage_mV" },
+            { "endvoltagemv_2", "Rest_BeginVoltage_mV" },
+            { "begintime_2", "Rest_BeginTime" },
+            { "endtime_2", "Rest_EndTime" },
+            { "begindkvoltagemv_2", "Rest_BeginDKVoltage_mV" },
+
+            // --- Metadata ---
+            { "filepath", "FilePath" },
+            { "importdate", "ImportDate" }
         };
 
         private readonly AppConfig _config;
@@ -109,9 +112,6 @@ namespace ImportData.Services
             _lastConnectionString = config.ConnectionString; 
         }
 
-        /// <summary>
-        /// Tạo connection string với các tham số pool phù hợp cho batch processing.
-        /// </summary>
         private string GetOptimizedConnectionString(int timeout = 0)
         {
             var builder = new SqlConnectionStringBuilder(_config.ConnectionString)
@@ -124,13 +124,8 @@ namespace ImportData.Services
             return builder.ConnectionString;
         }
 
-        /// <summary>
-        /// Tạo kết nối SQL mới với cơ chế retry tự động.
-        /// Khi mất kết nối, sẽ thử lại tối đa 3 lần với delay tăng dần (2s, 5s, 10s).
-        /// </summary>
         private async Task<SqlConnection> CreateConnectionWithRetryAsync()
         {
-            // Phát hiện thay đổi connection string → xóa pool cũ
             if (_config.ConnectionString != _lastConnectionString)
             {
                 SqlConnection.ClearAllPools();
@@ -159,18 +154,13 @@ namespace ImportData.Services
                     throw;
                 }
             }
-            // Lần cuối cùng: Nếu vẫn lỗi thì throw ra ngoài
             var finalConn = new SqlConnection(GetOptimizedConnectionString());
             await finalConn.OpenAsync();
             return finalConn;
         }
 
-        /// <summary>
-        /// Kiểm tra xem mã lỗi SQL có phải lỗi tạm thời (mạng, timeout) có thể retry được không.
-        /// </summary>
         internal static bool IsTransientErrorNumber(int errorNumber)
         {
-            // Các mã lỗi SQL transient phổ biến
             int[] transientErrors = { -2, 20, 64, 233, 10053, 10054, 10060, 40143, 40197, 40501, 40613, 49918, 49919, 49920 };
             return transientErrors.Contains(errorNumber) || errorNumber == -1 || errorNumber == 258;
         }
@@ -203,11 +193,6 @@ namespace ImportData.Services
             }
         }
 
-        /// <summary>
-        /// Nạp TOÀN BỘ lịch sử import thành công từ SQL vào bộ nhớ RAM trong 1 query duy nhất.
-        /// Trả về HashSet chứa đường dẫn file đã import + Dictionary (tên file → dung lượng) để kiểm tra file bị di chuyển.
-        /// Dùng cho Sync History để tránh gọi 10,000 query SQL riêng lẻ.
-        /// </summary>
         public async Task<(HashSet<string> importedPaths, Dictionary<string, long> fileNameSizeMap)> GetAllImportedFilesAsync()
         {
             var importedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -229,8 +214,6 @@ namespace ImportData.Services
                                 long size = reader.IsDBNull(1) ? 0 : reader.GetInt64(1);
                                 
                                 importedPaths.Add(path);
-                                
-                                // Lưu tên file + dung lượng để kiểm tra file bị di chuyển folder
                                 string fileName = Path.GetFileName(path);
                                 if (!fileNameSizeMap.ContainsKey(fileName))
                                 {
@@ -250,11 +233,6 @@ namespace ImportData.Services
             return (importedPaths, fileNameSizeMap);
         }
 
-        /// <summary>
-        /// Kiểm tra xem tệp Excel này đã được nạp thành công vào hệ thống trước đó chưa.
-        /// Chống nạp trùng thông minh: Kiểm tra theo Đường dẫn HOẶC (Tên file + Dung lượng).
-        /// Có retry logic để tránh crash khi mạng không ổn định.
-        /// </summary>
         public async Task<bool> IsFileImportedAsync(string filePath) 
         {
             try
@@ -263,20 +241,15 @@ namespace ImportData.Services
                 
                 long fileSize = new FileInfo(filePath).Length;
 
-                // Trích xuất đường dẫn tương đối từ BaseFolder để tránh trùng lặp chéo giữa các thiết bị (ví dụ 11# và 12#)
                 string relativePath = filePath;
                 if (!string.IsNullOrEmpty(_config.BaseFolder) && filePath.StartsWith(_config.BaseFolder, StringComparison.OrdinalIgnoreCase))
                 {
                     relativePath = filePath.Substring(_config.BaseFolder.Length).TrimStart('\\', '/');
                 }
-                // Chuẩn hóa ký tự phân tách thư mục về dạng Windows để đối chiếu trong SQL
                 relativePath = relativePath.Replace('/', '\\');
 
                 using (var conn = await CreateConnectionWithRetryAsync()) 
                 {
-                    // Kiểm tra 2 điều kiện:
-                    // 1. Đúng đường dẫn tuyệt đối (đã nạp rồi)
-                    // 2. Hoặc Cùng đường dẫn tương đối (bao gồm cả thư mục ngày và thư mục máy đo như 12#\data.xlsx) và cùng dung lượng
                     string sql = $@"SELECT COUNT(*) FROM {TableHistory} 
                                    WHERE Status = 'Success' 
                                    AND (FilePath = @path OR (FilePath LIKE '%' + @relativePath AND FileSize = @size))";
@@ -295,7 +268,7 @@ namespace ImportData.Services
             catch (Exception ex)
             {
                 _logger?.Invoke($"[LỖI-SQL] Không kiểm tra được lịch sử nạp file: {ex.Message}");
-                throw; // Ném lỗi để Form1 biết mà dừng lại, tránh nạp trùng dữ liệu khi mạng lỗi.
+                throw;
             }
         }
 
@@ -303,181 +276,122 @@ namespace ImportData.Services
         {
             if (dt == null || dt.Rows.Count == 0) return 0;
 
+            string eqNum = fileName.StartsWith("1#") ? "1#" : (fileName.StartsWith("2#") ? "2#" : "Unknown");
+            DateTime importDate = DateTime.Now;
+
+            // Xây dựng DataTable chuẩn hóa khớp 100% các cột SQL V2
+            DataTable dbTable = new DataTable();
+            foreach (var col in SqlColumns)
+            {
+                if (col == "ImportDate") dbTable.Columns.Add(col, typeof(DateTime));
+                else dbTable.Columns.Add(col, typeof(object));
+            }
+
+            // Bản đồ vị trí cột Excel theo tên header
+            Dictionary<string, int> colMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            for (int c = 0; c < dt.Columns.Count; c++)
+            {
+                string cName = dt.Columns[c].ColumnName.Trim();
+                if (!colMap.ContainsKey(cName)) colMap[cName] = c;
+            }
+
+            Func<string, DataRow, object> getVal = (cName, dtRow) => {
+                if (colMap.TryGetValue(cName, out int idx)) {
+                    var v = dtRow[idx];
+                    return (v == null || v == DBNull.Value || string.IsNullOrWhiteSpace(v.ToString()) || v.ToString() == "---") ? DBNull.Value : v;
+                }
+                return DBNull.Value;
+            };
+
+            for (int r = 0; r < dt.Rows.Count; r++)
+            {
+                DataRow dr = dbTable.NewRow();
+                DataRow sourceRow = dt.Rows[r];
+
+                dr["EquipmentNumber"] = eqNum;
+                dr["Position"] = getVal("Position", sourceRow);
+                dr["Channel"] = getVal("Channel", sourceRow);
+                dr["TrayID"] = getVal("TrayID", sourceRow);
+                dr["Barcode"] = getVal("barcode", sourceRow);
+
+                // 1. CCCVChg
+                dr["CCCVChg_WorkstepTime"] = getVal("WorkstepTime", sourceRow);
+                dr["CCCVChg_StopReason"] = getVal("StopReason", sourceRow);
+                dr["CCCVChg_BeginVoltage_mV"] = getVal("BeginVoltage(mV)", sourceRow);
+                dr["CCCVChg_EndVoltage_mV"] = getVal("EndVoltage(mV)", sourceRow);
+                dr["CCCVChg_BeginTime"] = getVal("BeginTime", sourceRow);
+                dr["CCCVChg_EndTime"] = getVal("EndTime", sourceRow);
+                dr["CCCVChg_BeginDKVoltage_mV"] = getVal("BeginDKVoltage(mV)", sourceRow);
+                dr["CCCVChg_BeginCurrent_mA"] = getVal("BeginCurrent(mA)", sourceRow);
+                dr["CCCVChg_EndCurrent_mA"] = getVal("EndCurrent(mA)", sourceRow);
+                dr["CCCVChg_EndDKVoltage_mV"] = getVal("EndDKVoltage(mV)", sourceRow);
+
+                // 2. CCDchg
+                dr["CCDchg_WorkstepTime"] = getVal("WorkstepTime_1", sourceRow);
+                dr["CCDchg_StopReason"] = getVal("StopReason_1", sourceRow);
+                dr["CCDchg_BeginVoltage_mV"] = getVal("BeginVoltage(mV)_1", sourceRow);
+                dr["CCDchg_EndVoltage_mV"] = getVal("EndVoltage(mV)_1", sourceRow);
+                dr["CCDchg_BeginTime"] = getVal("BeginTime_1", sourceRow);
+                dr["CCDchg_EndTime"] = getVal("EndTime_1", sourceRow);
+                dr["CCDchg_BeginCurrent_mA"] = getVal("BeginCurrent(mA)_1", sourceRow);
+                if (dr["CCDchg_BeginCurrent_mA"] == DBNull.Value) dr["CCDchg_BeginCurrent_mA"] = getVal("BeginCurrent(mA)", sourceRow);
+                
+                dr["CCDchg_EndCurrent_mA"] = getVal("EndCurrent(mA)_1", sourceRow);
+                if (dr["CCDchg_EndCurrent_mA"] == DBNull.Value) dr["CCDchg_EndCurrent_mA"] = getVal("EndCurrent(mA)", sourceRow);
+
+                dr["CCDchg_Capacity_mAh"] = getVal("Capacity(mAh)", sourceRow);
+                dr["CCDchg_Capacitance_F"] = getVal("Capacitance(F)", sourceRow);
+                dr["CCDchg_Capacitance1_F"] = getVal("Capacitance1(F)", sourceRow);
+                dr["CCDchg_CapacitanceVoltage2_mV"] = getVal("CapacitanceVoltage2(mV)", sourceRow);
+                dr["CCDchg_Capacitance2_F"] = getVal("Capacitance2(F)", sourceRow);
+                dr["CCDchg_Capacitance3_F"] = getVal("Capacitance3(F)", sourceRow);
+                dr["CCDchg_Capacitance4_F"] = getVal("Capacitance4(F)", sourceRow);
+
+                // 3. Rest
+                dr["Rest_WorkstepTime"] = getVal("WorkstepTime_2", sourceRow);
+                dr["Rest_StopReason"] = getVal("StopReason_2", sourceRow);
+                dr["Rest_BeginVoltage_mV"] = getVal("BeginVoltage(mV)_2", sourceRow);
+                dr["Rest_EndVoltage_mV"] = getVal("EndVoltage(mV)_2", sourceRow);
+                dr["Rest_BeginTime"] = getVal("BeginTime_2", sourceRow);
+                dr["Rest_EndTime"] = getVal("EndTime_2", sourceRow);
+                dr["Rest_BeginDKVoltage_mV"] = getVal("BeginDKVoltage(mV)_1", sourceRow);
+
+                dr["FilePath"] = filePath;
+                dr["ImportDate"] = importDate;
+
+                dbTable.Rows.Add(dr);
+            }
+
             using (var conn = await CreateConnectionWithRetryAsync()) 
             {
                 using (var trans = conn.BeginTransaction())
                 {
                     try
                     {
-                        // 1. Chuẩn bị dữ liệu bổ sung (FilePath, ImportDate)
-                        // ImportDate = thời gian file được máy đo ghi hoàn chỉnh (LastWriteTime), KHÔNG phải thời gian nạp.
-                        if (!dt.Columns.Contains("FilePath")) dt.Columns.Add("FilePath", typeof(string));
-                        if (!dt.Columns.Contains("ImportDate")) dt.Columns.Add("ImportDate", typeof(DateTime));
-                        
-                        DateTime fileWriteTime = DateTime.Now;
-                        bool parsedFromFileName = false;
-                        try
-                        {
-                            string nameNoExt = Path.GetFileNameWithoutExtension(filePath);
-                            var match = System.Text.RegularExpressions.Regex.Match(nameNoExt, @"\d{14}");
-                            if (match.Success)
-                            {
-                                if (DateTime.TryParseExact(match.Value, "yyyyMMddHHmmss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime parsedTime))
-                                {
-                                    fileWriteTime = parsedTime;
-                                    parsedFromFileName = true;
-                                }
-                            }
-                        }
-                        catch
-                        {
-                            // Bỏ qua nếu có lỗi parse tên file
-                        }
-
-                        if (!parsedFromFileName)
-                        {
-                            try
-                            {
-                                fileWriteTime = File.GetLastWriteTime(filePath);
-                            }
-                            catch
-                            {
-                                // Nếu không lấy được thời gian file, dùng thời gian hiện tại làm fallback
-                            }
-                        }
-
-                        // Định vị các cột khoá chính để lọc dữ liệu hợp lệ
-                        int barcodeColIdx = -1;
-                        int startTimeColIdx = -1;
-                        int equipmentColIdx = -1;
-                        
-                        // Tìm tất cả các cột có thể làm Barcode (ví dụ: Barcode, LotNo, LotID, CellID)
-                        var barcodeColCandidates = new List<int>();
-                        for (int col = 0; col < dt.Columns.Count; col++)
-                        {
-                            string searchKey = GetSearchKey(dt.Columns[col].ColumnName);
-                            if (AliasToSqlColumnMap.TryGetValue(searchKey, out string? sqlCol))
-                            {
-                                if (sqlCol == "Barcode") barcodeColCandidates.Add(col);
-                                else if (sqlCol == "StartTime") startTimeColIdx = col;
-                                else if (sqlCol == "EquipmentNumber") equipmentColIdx = col;
-                            }
-                        }
-
-                        // Chọn cột Barcode tốt nhất có chứa dữ liệu thực tế
-                        if (barcodeColCandidates.Count > 0)
-                        {
-                            barcodeColIdx = barcodeColCandidates[0]; // Mặc định chọn cột ứng viên đầu tiên
-                            
-                            foreach (int colIdx in barcodeColCandidates)
-                            {
-                                bool hasData = false;
-                                int checkLimit = Math.Min(dt.Rows.Count, 10);
-                                for (int r = 0; r < checkLimit; r++)
-                                {
-                                    var val = dt.Rows[r][colIdx];
-                                    if (val != null && !string.IsNullOrWhiteSpace(val.ToString()) && val.ToString() != "---")
-                                    {
-                                        hasData = true;
-                                        break;
-                                    }
-                                }
-                                
-                                if (hasData)
-                                {
-                                    // Ưu tiên cột có chứa dữ liệu thực tế. Nếu cột có tên chính xác là "barcode" và có dữ liệu thì càng tốt.
-                                    string colName = GetSearchKey(dt.Columns[colIdx].ColumnName);
-                                    if (colName == "barcode" || barcodeColIdx == barcodeColCandidates[0] || string.IsNullOrWhiteSpace(dt.Rows[0][barcodeColIdx]?.ToString()))
-                                    {
-                                        barcodeColIdx = colIdx;
-                                    }
-                                }
-                            }
-                        }
-
-                        // Duyệt ngược để xóa các dòng lỗi/thiếu khoá chính, gán thông tin file cho dòng hợp lệ
-                        for (int i = dt.Rows.Count - 1; i >= 0; i--)
-                        {
-                            DataRow row = dt.Rows[i];
-                            bool isValid = true;
-                            
-                            if (barcodeColIdx >= 0 && (row[barcodeColIdx] == DBNull.Value || string.IsNullOrWhiteSpace(row[barcodeColIdx].ToString()))) isValid = false;
-                            if (startTimeColIdx >= 0 && (row[startTimeColIdx] == DBNull.Value || string.IsNullOrWhiteSpace(row[startTimeColIdx].ToString()))) isValid = false;
-                            if (equipmentColIdx >= 0 && (row[equipmentColIdx] == DBNull.Value || string.IsNullOrWhiteSpace(row[equipmentColIdx].ToString()))) isValid = false;
-                            
-                            if (!isValid)
-                            {
-                                dt.Rows.RemoveAt(i);
-                                continue;
-                            }
-
-                            row["FilePath"] = filePath; 
-                            row["ImportDate"] = fileWriteTime; 
-                        }
-
-                        // 2. TẠO BẢNG TẠM TRONG SQL (Dùng cấu trúc tương đương bảng đích)
+                        // 1. TẠO BẢNG TẠM TRONG SQL V2
                         string tempTableName = $"#TempImport_{Guid.NewGuid().ToString("N")}";
                         string createTempSql = $"SELECT TOP 0 * INTO {tempTableName} FROM {TableData}";
                         using (var cmdCreate = new SqlCommand(createTempSql, conn, trans)) { await cmdCreate.ExecuteNonQueryAsync(); }
 
-                        // 3. BULK COPY VÀO BẢNG TẠM (Tốc độ cực nhanh)
+                        // 2. BULK COPY VÀO BẢNG TẠM V2
                         using (var bulkCopy = new SqlBulkCopy(conn, SqlBulkCopyOptions.Default, trans))
                         {
                             bulkCopy.DestinationTableName = tempTableName;
                             bulkCopy.BatchSize = 1000;
                             bulkCopy.BulkCopyTimeout = 120;
 
-                            // Thực hiện ánh xạ cột chính xác
-                            for (int col = 0; col < dt.Columns.Count; col++)
+                            foreach (DataColumn c in dbTable.Columns)
                             {
-                                DataColumn dc = dt.Columns[col];
-                                string searchKey = GetSearchKey(dc.ColumnName);
-
-                                // Xử lý động cho cột thời gian xả (Discharge Time) do có nhiều định dạng đơn vị khác nhau
-                                if (searchKey.StartsWith("dischargevoltage1time"))
-                                {
-                                    bulkCopy.ColumnMappings.Add(dc.ColumnName, "DischargeVoltage1_Time");
-                                    continue;
-                                }
-                                if (searchKey.StartsWith("dischargevoltage2time"))
-                                {
-                                    bulkCopy.ColumnMappings.Add(dc.ColumnName, "DischargeVoltage2_Time");
-                                    continue;
-                                }
-
-                                if (AliasToSqlColumnMap.TryGetValue(searchKey, out string? sqlCol))
-                                {
-                                    if (sqlCol == "Barcode")
-                                    {
-                                        // Chỉ ánh xạ cột được chọn làm Barcode thực tế chứa dữ liệu
-                                        if (col == barcodeColIdx)
-                                        {
-                                            bulkCopy.ColumnMappings.Add(dc.ColumnName, "Barcode");
-                                        }
-                                        continue;
-                                    }
-
-                                    bulkCopy.ColumnMappings.Add(dc.ColumnName, sqlCol);
-                                }
+                                bulkCopy.ColumnMappings.Add(c.ColumnName, c.ColumnName);
                             }
-                            // Bắt buộc map 2 cột metadata
-                            bulkCopy.ColumnMappings.Add("FilePath", "FilePath");
-                            bulkCopy.ColumnMappings.Add("ImportDate", "ImportDate");
-                            
-                            await bulkCopy.WriteToServerAsync(dt);
+                            await bulkCopy.WriteToServerAsync(dbTable);
                         }
 
-                        // 4. MERGE DỮ LIỆU TỪ BẢNG TẠM SANG BẢNG CHÍNH
-                        // KEY UNIQUE đúng cho dữ liệu cell: Barcode + StartTime + EquipmentNumber + Channel + Position
-                        // Lý do PHẢI có Channel + Position:
-                        //   - Mỗi file Excel có 64 rows, TẤT CẢ đều cùng Barcode + StartTime + EquipmentNumber
-                        //   - Nếu chỉ partition theo 3 cột trên → ROW_NUMBER() group tất cả 64 rows vào 1 nhóm
-                        //     → WHERE rn=1 chỉ giữ lại 1 row duy nhất, 63 rows còn lại bị bỏ! (BUG TRƯỚC ĐÂY)
-                        //   - Channel + Position phân biệt từng cell riêng lẻ trong cùng 1 batch
+                        // 3. MERGE DỮ LIỆU TỪ BẢNG TẠM SANG BẢNG CHÍNH V2
                         string mergeSql = $@"
                             WITH UniqueSrc AS (
                                 SELECT *, ROW_NUMBER() OVER (
-                                    PARTITION BY Barcode, StartTime, EquipmentNumber, Channel, Position
+                                    PARTITION BY EquipmentNumber, Position, Channel, FilePath
                                     ORDER BY (SELECT NULL)
                                 ) as rn
                                 FROM {tempTableName}
@@ -488,11 +402,10 @@ namespace ImportData.Services
                             WHERE rn = 1
                             AND NOT EXISTS (
                                 SELECT 1 FROM {TableData} AS dest
-                                WHERE dest.Barcode = src.Barcode 
-                                AND dest.StartTime = src.StartTime
-                                AND dest.EquipmentNumber = src.EquipmentNumber
-                                AND dest.Channel = src.Channel
+                                WHERE dest.EquipmentNumber = src.EquipmentNumber
                                 AND dest.Position = src.Position
+                                AND dest.Channel = src.Channel
+                                AND dest.FilePath = src.FilePath
                             )";
                         
                         int rowsInserted = 0;
@@ -502,7 +415,7 @@ namespace ImportData.Services
                             rowsInserted = await cmdMerge.ExecuteNonQueryAsync();
                         }
 
-                        // 5. Ghi lịch sử nạp file (Sử dụng UPSERT để tránh vi phạm khóa unique UX_ExcelImportHistory_FilePath)
+                        // 4. GHI LỊCH SỬ NẠP FILE V2
                         long fileSize = new FileInfo(filePath).Length;
                         string historySql = $@"
                             IF EXISTS (SELECT 1 FROM {TableHistory} WHERE FilePath = @path)
@@ -526,7 +439,7 @@ namespace ImportData.Services
                         }
 
                         trans.Commit();
-                        _logger?.Invoke($"[DB-OK] Đã nạp thành công {rowsInserted} dòng mới từ tệp {fileName}");
+                        _logger?.Invoke($"[DB-OK] Đã nạp thành công {rowsInserted} dòng mới V2 từ tệp {fileName}");
                         return rowsInserted; 
                     }
                     catch (Exception ex)
@@ -539,12 +452,6 @@ namespace ImportData.Services
             }
         }
 
-
-
-        /// <summary>
-        /// Xóa dữ liệu + lịch sử import của DANH SÁCH file cụ thể (chỉ file bị lỗi).
-        /// Xử lý theo batch 50 file/lần để tránh query quá lớn.
-        /// </summary>
         public async Task<(int deletedRows, int deletedHistory)> DeleteByFilePathsAsync(List<string> filePaths)
         {
             if (filePaths == null || filePaths.Count == 0) return (0, 0);
@@ -556,7 +463,6 @@ namespace ImportData.Services
             {
                 using (var conn = await CreateConnectionWithRetryAsync())
                 {
-                    // Xử lý theo batch 50 file/lần
                     const int batchSize = 50;
                     for (int batchStart = 0; batchStart < filePaths.Count; batchStart += batchSize)
                     {
@@ -566,13 +472,11 @@ namespace ImportData.Services
                         {
                             try
                             {
-                                // Tạo danh sách tham số @p0, @p1, @p2...
                                 var paramNames = new List<string>();
                                 for (int i = 0; i < batch.Count; i++)
                                     paramNames.Add($"@p{i}");
                                 string inClause = string.Join(", ", paramNames);
 
-                                // 1. Xóa dữ liệu chính (toàn bộ dòng của file bị lỗi, cả NULL lẫn non-NULL)
                                 string sqlDeleteData = $"DELETE FROM {TableData} WHERE FilePath IN ({inClause})";
                                 using (var cmd = new SqlCommand(sqlDeleteData, conn, trans))
                                 {
@@ -582,7 +486,6 @@ namespace ImportData.Services
                                     totalDeletedRows += await cmd.ExecuteNonQueryAsync();
                                 }
 
-                                // 2. Xóa lịch sử import
                                 string sqlDeleteHistory = $"DELETE FROM {TableHistory} WHERE FilePath IN ({inClause})";
                                 using (var cmd = new SqlCommand(sqlDeleteHistory, conn, trans))
                                 {
@@ -602,7 +505,7 @@ namespace ImportData.Services
                         }
                     }
 
-                    _logger?.Invoke($"[REBUILD] Đã xóa {totalDeletedRows:N0} dòng dữ liệu và {totalDeletedHistory:N0} bản ghi lịch sử từ {filePaths.Count} file lỗi.");
+                    _logger?.Invoke($"[REBUILD] Đã xóa {totalDeletedRows:N0} dòng dữ liệu và {totalDeletedHistory:N0} bản ghi lịch sử V2 từ {filePaths.Count} file lỗi.");
                     return (totalDeletedRows, totalDeletedHistory);
                 }
             }
@@ -613,9 +516,6 @@ namespace ImportData.Services
             }
         }
 
-        /// <summary>
-        /// Lấy thống kê tổng số file đã import thành công và tổng số dòng dữ liệu đã chèn.
-        /// </summary>
         public async Task<(int totalFiles, int totalRows)> GetStatsAsync()
         {
             try

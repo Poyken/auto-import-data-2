@@ -9,41 +9,32 @@ namespace ImportData.Services
     /// <summary>
     /// Lớp ExcelService: Chuyên đọc và phân giải nội dung tệp Excel từ máy đo.
     /// Chuyển đổi dữ liệu từ tệp vật lý sang bảng DataTable trong bộ nhớ RAM để SQL có thể nuốt được.
-    /// Hỗ trợ 2 định dạng header khác nhau từ các máy đo khác nhau.
+    /// Hỗ trợ cả định dạng V1 cũ và V2 mới từ các máy đo khác nhau.
     /// </summary>
     public class ExcelService
     {
-        private readonly Action<string> _logger; // Hàm log để bắn lỗi ra màn hình chính.
+        private readonly Action<string> _logger;
 
         /// <summary>
-        /// Mảng RequiredHeaders: Danh sách tiêu đề cột bắt buộc phải có trong file Excel máy đo.
-        /// Dùng để nhận diện file có phải là dữ liệu đo đạc không.
-        /// Bao gồm alias từ cả 2 format (Equipment Number + DevName).
+        /// Mảng RequiredHeaders: Danh sách tiêu đề cột nhận diện dữ liệu đo đạc (Cả Ver 1 và Ver 2).
         /// </summary>
         internal static readonly string[] RequiredHeaders = {
-            "EquipmentNumber", "DevName", "SorterNum", "SortNum", "StartTime", "WorkflowCode", "LotNo",
-            "Barcode", "Slot", "Position", "Channel", "Capacity", "Capacitance", 
-            "BeginVoltageSD", "ChargeEndCurrent", "EndVoltage", "EndCurrent", "DischargeVoltage1", 
-            "DischargeVoltage1Time", "DischargeVoltage2", "DischargeVoltage2Time", "DischargeBeginVoltage", "DischargeBeginCurrent", 
-            "NGInfo", "EndTime"
+            "EquipmentNumber", "DevName", "SorterNum", "SortNum", "TrayID", "StartTime", "BeginTime", "EndTime", 
+            "WorkflowCode", "LotNo", "Barcode", "Slot", "Position", "Channel", "Capacity", "Capacitance", 
+            "WorkType", "WorkstepTime", "StopReason", "BeginVoltage", "EndVoltage", "BeginCurrent", "EndCurrent",
+            "BeginVoltageSD", "ChargeEndCurrent", "DischargeVoltage1", "DischargeVoltage1Time", 
+            "DischargeVoltage2", "DischargeVoltage2Time", "DischargeBeginVoltage", "DischargeBeginCurrent", "NGInfo"
         };
 
-        // Hàm khởi tạo ExcelService.
         public ExcelService(Action<string> logger)
         {
             _logger = logger; 
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
         }
 
-        /// <summary>
-        /// Chuẩn hóa tên cột Excel: Loại bỏ ký tự ẩn (newline, Zero-Width Space, BOM), 
-        /// khoảng trắng, dấu đặc biệt để so sánh chính xác.
-        /// </summary>
         internal static string NormalizeColumnName(string name)
         {
             if (string.IsNullOrEmpty(name)) return string.Empty;
-            // Loại bỏ ký tự điều khiển (newline \n, carriage return \r, tab...), 
-            // Zero-Width Space (\u200B = 8203), BOM (\uFEFF = 65279)
             var chars = name.Where(c => !char.IsControl(c) && (int)c != 8203 && (int)c != 65279).ToArray();
             string clean = new string(chars).Trim();
             return clean.Replace(" ", "").Replace("_", "").Replace("(", "").Replace(")", "")
@@ -51,68 +42,122 @@ namespace ImportData.Services
                         .Replace(":", "").Replace("：", "").Replace(",", "").Replace("%", "").ToLower();
         }
 
-        /// <summary>
-        /// Đọc nội dung tệp Excel vật lý và chuyển thành DataTable.
-        /// Sử dụng FileShare.ReadWrite để không làm gián đoạn máy đo.
-        /// </summary>
         public DataTable ReadExcelFile(string filePath)
         {
             try 
             {
-                DataTable dt; 
-                
-                using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) 
                 {
-                    using (var reader = ExcelReaderFactory.CreateReader(stream))
+                    using (var reader = ExcelReaderFactory.CreateReader(stream)) 
                     {
-                        var result = reader.AsDataSet(new ExcelDataSetConfiguration() 
+                        var ds = reader.AsDataSet(new ExcelDataSetConfiguration() 
                         {
-                            ConfigureDataTable = (_) => new ExcelDataTableConfiguration() { UseHeaderRow = true }
+                            ConfigureDataTable = (_) => new ExcelDataTableConfiguration() { UseHeaderRow = false }
                         });
-                        dt = result.Tables[0]; 
-                    } 
-                } 
 
-                if (dt != null) 
-                {
-                    if (!ValidateHeaders(dt))
-                    {
-                        _logger?.Invoke($"[LỖI-EXCEL] Cấu trúc tệp không đúng: {Path.GetFileName(filePath)}"); 
-                        return null; 
-                    }
+                        if (ds.Tables.Count == 0) return null;
 
-                    for (int i = dt.Rows.Count - 1; i >= 0; i--)
-                    {
-                        DataRow row = dt.Rows[i];
-                        bool isEmpty = true;
-                        for (int j = 0; j < dt.Columns.Count; j++)
+                        DataTable selectedTable = null;
+                        foreach (DataTable table in ds.Tables)
                         {
-                            var val = row[j];
-                            if (val != null && !string.IsNullOrWhiteSpace(val.ToString()) && val.ToString() != "---")
+                            if (table.TableName.Contains("AggregateData", StringComparison.OrdinalIgnoreCase) || table.Columns.Count >= 10)
                             {
-                                isEmpty = false;
+                                selectedTable = table;
                                 break;
                             }
                         }
-                        
-                        if (isEmpty) 
-                        {
-                            dt.Rows.RemoveAt(i);
-                            continue;
-                        }
+                        if (selectedTable == null) selectedTable = ds.Tables[0];
 
-                        // Chuyển đổi "---", rỗng hoặc chỉ có khoảng trắng thành DBNull cho các cột để tránh lỗi ép kiểu khi insert SQL
-                        for (int j = 0; j < dt.Columns.Count; j++)
+                        // Dò dòng chứa Header (Hàng 1 hoặc Hàng 2)
+                        int headerRowIdx = -1;
+                        for (int r = 0; r < Math.Min(5, selectedTable.Rows.Count); r++)
                         {
-                            var valStr = row[j]?.ToString();
-                            if (valStr == "---" || string.IsNullOrWhiteSpace(valStr))
+                            int matchCount = 0;
+                            for (int c = 0; c < selectedTable.Columns.Count; c++)
                             {
-                                row[j] = DBNull.Value;
+                                string val = selectedTable.Rows[r][c]?.ToString()?.ToLower() ?? "";
+                                if (val.Contains("channel") || val.Contains("position") || val.Contains("barcode") || val.Contains("workstep"))
+                                {
+                                    matchCount++;
+                                }
+                            }
+                            if (matchCount >= 2)
+                            {
+                                headerRowIdx = r;
+                                break;
                             }
                         }
-                    }
-                }
-                return dt; 
+
+                        DataTable dt = new DataTable();
+                        if (headerRowIdx >= 0)
+                        {
+                            for (int c = 0; c < selectedTable.Columns.Count; c++)
+                            {
+                                string colName = selectedTable.Rows[headerRowIdx][c]?.ToString()?.Trim() ?? "";
+                                if (string.IsNullOrEmpty(colName)) colName = $"Col_{c}";
+                                string finalColName = colName;
+                                int dup = 1;
+                                while (dt.Columns.Contains(finalColName)) finalColName = $"{colName}_{dup++}";
+                                dt.Columns.Add(finalColName);
+                            }
+
+                            for (int r = headerRowIdx + 1; r < selectedTable.Rows.Count; r++)
+                            {
+                                DataRow newRow = dt.NewRow();
+                                for (int c = 0; c < selectedTable.Columns.Count; c++)
+                                {
+                                    newRow[c] = selectedTable.Rows[r][c];
+                                }
+                                dt.Rows.Add(newRow);
+                            }
+                        }
+                        else
+                        {
+                            dt = selectedTable;
+                        }
+
+                        if (dt != null) 
+                        {
+                            if (!ValidateHeaders(dt))
+                            {
+                                _logger?.Invoke($"[LỖI-EXCEL] Cấu trúc tệp không đúng: {Path.GetFileName(filePath)}"); 
+                                return null; 
+                            }
+
+                            for (int i = dt.Rows.Count - 1; i >= 0; i--)
+                            {
+                                DataRow row = dt.Rows[i];
+                                bool isEmpty = true;
+                                for (int j = 0; j < dt.Columns.Count; j++)
+                                {
+                                    var val = row[j];
+                                    if (val != null && !string.IsNullOrWhiteSpace(val.ToString()) && val.ToString() != "---")
+                                    {
+                                        isEmpty = false;
+                                        break;
+                                    }
+                                }
+                                
+                                if (isEmpty) 
+                                {
+                                    dt.Rows.RemoveAt(i);
+                                    continue;
+                                }
+
+                                for (int j = 0; j < dt.Columns.Count; j++)
+                                {
+                                    var valStr = row[j]?.ToString();
+                                    if (valStr == "---" || string.IsNullOrWhiteSpace(valStr))
+                                    {
+                                        row[j] = DBNull.Value;
+                                    }
+                                }
+                            }
+                            return dt;
+                        }
+                    } 
+                } 
+                return null; 
             }
             catch (Exception ex) 
             {
@@ -121,21 +166,14 @@ namespace ImportData.Services
             }
         }
 
-        /// <summary>
-        /// Kiểm thử tiêu đề cột: Đảm bảo tệp Excel có cấu trúc khớp với dữ liệu máy đo.
-        /// Hỗ trợ cả 2 format header (Equipment Number / DevName).
-        /// Sử dụng NormalizeColumnName để loại bỏ ký tự ẩn, newline trước khi so sánh.
-        /// </summary>
         internal bool ValidateHeaders(DataTable dt)
         {
-            if (dt == null || dt.Columns.Count < 5) return false; 
+            if (dt == null || dt.Columns.Count < 3) return false; 
 
             int matchCount = 0;
             foreach (DataColumn dc in dt.Columns)
             {
-                // Chuẩn hóa tên cột: Loại bỏ ký tự ẩn, newline, dấu đặc biệt
                 string colName = NormalizeColumnName(dc.ColumnName);
-                
                 foreach (var required in RequiredHeaders)
                 {
                     string reqName = required.ToLower().Replace("_", "");
@@ -146,15 +184,9 @@ namespace ImportData.Services
                     }
                 }
             }
-
-            // Nếu khớp được trên 8 cột tiêu đề quan trọng thì coi như đúng định dạng máy đo.
-            return matchCount >= 8;
+            return matchCount >= 3;
         }
 
-        /// <summary>
-        /// Kiểm tra nhanh xem file Excel có cột ESR, OCV hoặc ESRTime hay không.
-        /// Chỉ đọc hàng tiêu đề đầu tiên để tối ưu tốc độ.
-        /// </summary>
         public bool HasEsrColumns(string filePath)
         {
             try
@@ -163,7 +195,7 @@ namespace ImportData.Services
                 {
                     using (var reader = ExcelReaderFactory.CreateReader(stream))
                     {
-                        if (reader.Read()) // Đọc hàng đầu tiên
+                        if (reader.Read())
                         {
                             for (int i = 0; i < reader.FieldCount; i++)
                             {
@@ -177,7 +209,7 @@ namespace ImportData.Services
                     }
                 }
             }
-            catch { /* Bỏ qua nếu có lỗi truy cập file */ }
+            catch { }
             return false;
         }
     }

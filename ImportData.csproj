@@ -5,8 +5,8 @@
     <!-- Loại đầu ra: WinExe (Ứng dụng có cửa sổ giao diện trên Windows). -->
     <OutputType>WinExe</OutputType>
     
-    <!-- Nền tảng đích: Sử dụng .NET mới nhất dành cho Windows. -->
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <!-- Nền tảng đích: Sử dụng .NET 9.0 dành cho Windows. -->
+    <TargetFramework>net9.0-windows</TargetFramework>
     
     <!-- Icon của ứng dụng -->
     <ApplicationIcon>app_icon.ico</ApplicationIcon>
@@ -41,9 +41,9 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.4" />
     
     <!-- Các thư viện hỗ trợ đọc file cấu hình Json (appsettings.json). -->
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.5" />
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.2" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.11" />
   </ItemGroup>
 
   <ItemGroup>
