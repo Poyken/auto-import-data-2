@@ -59,7 +59,7 @@ namespace ImportData
             // 4. Tạo biểu tượng chạy ngầm dưới khay đồng hồ.
             _trayIcon = new NotifyIcon()
             {
-                Icon = this.Icon,
+                Icon = this.Icon ?? SystemIcons.Application,
                 Text = "Dịch vụ Auto Import (Đang chạy ngầm)",
                 Visible = true
             };
@@ -81,6 +81,12 @@ namespace ImportData
         // Khi Form đã hiện lên: Bắt đầu canh gác!
         private async void Form1_Shown(object sender, EventArgs e)
         {
+            this.Show();
+            this.WindowState = FormWindowState.Normal;
+            this.BringToFront();
+            this.Activate();
+
+            Log($"[KHỞI TẠO] Ứng dụng đã khởi động thành công trên màn hình.");
             Log($"[KHỞI TẠO] Theo dõi thư mục: {_config.BaseFolder}");
             
             // Cài đặt đồng hồ 10 giây lặp lại.
