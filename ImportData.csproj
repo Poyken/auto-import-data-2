@@ -26,6 +26,9 @@
     <!-- Hỗ trợ đóng gói Self-Contained cho Windows 64-bit (Đảm bảo chạy mượt trên mọi máy tính) -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <CETCompat>false</CETCompat>
   </PropertyGroup>
  
