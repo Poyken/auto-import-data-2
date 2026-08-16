@@ -1,4 +1,4 @@
-<!-- Tệp cấu hình dự án (Project File): Chứa các thư viện và thiết lập nền tảng để chạy App. -->
+﻿<!-- Tệp cấu hình dự án (Project File): Chứa các thư viện và thiết lập nền tảng để chạy App. -->
 <Project Sdk="Microsoft.NET.Sdk">
  
   <PropertyGroup>
@@ -26,6 +26,7 @@
     <!-- Hỗ trợ đóng gói Self-Contained cho Windows 64-bit (Đảm bảo chạy mượt trên mọi máy tính) -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
+    <CETCompat>false</CETCompat>
   </PropertyGroup>
  
   <ItemGroup>
