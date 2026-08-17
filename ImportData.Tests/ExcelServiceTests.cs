@@ -28,16 +28,51 @@ namespace ImportData.Tests
         [Fact]
         public void PrintColumns()
         {
-            string file1 = Path.Combine(_workspaceDir, "ExcelData", "2026-08-15", "1#15_14.52.13", "1#15_14.52.13.xlsx");
-            if (!File.Exists(file1)) return;
+            string[] files = {
+                Path.Combine(_workspaceDir, "ExcelData", "2026-08-15", "1#15_14.52.13", "1#15_14.52.13.xlsx"),
+                Path.Combine(_workspaceDir, "ExcelData", "2026-08-15", "2#15_15.05.01", "2#15_15.05.01.xlsx")
+            };
 
-            var dt1 = _excelService.ReadExcelFile(file1);
-            if (dt1 == null) return;
-
-            _output.WriteLine("--- FILE 1 COLUMNS ---");
-            foreach (DataColumn dc in dt1.Columns)
+            foreach (var file in files)
             {
-                _output.WriteLine($"'{dc.ColumnName}' -> Key: '{DatabaseService.GetSearchKey(dc.ColumnName)}'");
+                if (!File.Exists(file)) continue;
+
+                _output.WriteLine($"\n=======================================================");
+                _output.WriteLine($"INSPECTING FILE: {Path.GetFileName(file)}");
+                _output.WriteLine($"=======================================================");
+
+                var dt = _excelService.ReadExcelFile(file);
+                if (dt == null)
+                {
+                    _output.WriteLine("FAILED TO READ EXCEL FILE!");
+                    continue;
+                }
+
+                _output.WriteLine($"Total Rows: {dt.Rows.Count}, Total Columns: {dt.Columns.Count}\n");
+
+                _output.WriteLine("--- COLUMN MAPPINGS TO SQL V2 ---");
+                for (int c = 0; c < dt.Columns.Count; c++)
+                {
+                    string rawCol = dt.Columns[c].ColumnName;
+                    string key = DatabaseService.GetSearchKey(rawCol);
+                    bool mapped = DatabaseService.AliasToSqlColumnMap.TryGetValue(key, out string sqlCol);
+                    string target = mapped ? sqlCol : "UNMAPPED";
+                    _output.WriteLine($"Col[{c:D2}] Raw: '{rawCol}' => Key: '{key}' => SQL Target: '{target}'");
+                }
+
+                _output.WriteLine("\n--- SAMPLE DATA (FIRST 3 ROWS) ---");
+                for (int r = 0; r < Math.Min(3, dt.Rows.Count); r++)
+                {
+                    _output.WriteLine($"\n[ROW {r + 1}]:");
+                    for (int c = 0; c < dt.Columns.Count; c++)
+                    {
+                        string rawCol = dt.Columns[c].ColumnName;
+                        string key = DatabaseService.GetSearchKey(rawCol);
+                        DatabaseService.AliasToSqlColumnMap.TryGetValue(key, out string sqlCol);
+                        object val = dt.Rows[r][c];
+                        _output.WriteLine($"  {sqlCol ?? rawCol} ({rawCol}): '{val}'");
+                    }
+                }
             }
         }
 

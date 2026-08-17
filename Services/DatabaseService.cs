@@ -50,53 +50,121 @@ namespace ImportData.Services
             // --- Cột thiết bị & vị trí ---
             { "equipmentnumber", "EquipmentNumber" },
             { "devname", "EquipmentNumber" },
+            { "sorternum", "EquipmentNumber" },
+            { "sortnum", "EquipmentNumber" },
+
             { "position", "Position" },
+            { "slot", "Position" },
+
             { "channel", "Channel" },
+
             { "trayid", "TrayID" },
+            { "trayno", "TrayID" },
+            { "tray", "TrayID" },
+            { "traynumber", "TrayID" },
+            { "traycode", "TrayID" },
+
             { "barcode", "Barcode" },
             { "lotno", "Barcode" },
             { "lotid", "Barcode" },
             { "cellid", "Barcode" },
+            { "barcodelotno", "Barcode" },
+            { "barcodeno", "Barcode" },
+            { "sn", "Barcode" },
+            { "serialnumber", "Barcode" },
+            { "serialno", "Barcode" },
 
             // --- 1. CCCVChg ---
             { "worksteptime", "CCCVChg_WorkstepTime" },
+            { "worksteptime0", "CCCVChg_WorkstepTime" },
             { "stopreason", "CCCVChg_StopReason" },
+            { "stopreason0", "CCCVChg_StopReason" },
             { "beginvoltagemv", "CCCVChg_BeginVoltage_mV" },
+            { "beginvoltagemv0", "CCCVChg_BeginVoltage_mV" },
+            { "beginvoltage", "CCCVChg_BeginVoltage_mV" },
+            { "chargebeginvoltage", "CCCVChg_BeginVoltage_mV" },
             { "endvoltagemv", "CCCVChg_EndVoltage_mV" },
+            { "endvoltagemv0", "CCCVChg_EndVoltage_mV" },
+            { "endvoltage", "CCCVChg_EndVoltage_mV" },
+            { "chargeendvoltage", "CCCVChg_EndVoltage_mV" },
             { "begintime", "CCCVChg_BeginTime" },
+            { "begintime0", "CCCVChg_BeginTime" },
+            { "starttime", "CCCVChg_BeginTime" },
             { "endtime", "CCCVChg_EndTime" },
+            { "endtime0", "CCCVChg_EndTime" },
             { "begindkvoltagemv", "CCCVChg_BeginDKVoltage_mV" },
+            { "begindkvoltagemv0", "CCCVChg_BeginDKVoltage_mV" },
             { "begincurrentma", "CCCVChg_BeginCurrent_mA" },
+            { "begincurrentma0", "CCCVChg_BeginCurrent_mA" },
+            { "begincurrent", "CCCVChg_BeginCurrent_mA" },
+            { "chargebegincurrent", "CCCVChg_BeginCurrent_mA" },
             { "endcurrentma", "CCCVChg_EndCurrent_mA" },
+            { "endcurrentma0", "CCCVChg_EndCurrent_mA" },
+            { "endcurrent", "CCCVChg_EndCurrent_mA" },
+            { "chargeendcurrent", "CCCVChg_EndCurrent_mA" },
             { "enddkvoltagemv", "CCCVChg_EndDKVoltage_mV" },
+            { "enddkvoltagemv0", "CCCVChg_EndDKVoltage_mV" },
 
             // --- 2. CCDchg ---
+            { "worksteptime1", "CCDchg_WorkstepTime" },
             { "worksteptime_1", "CCDchg_WorkstepTime" },
+            { "stopreason1", "CCDchg_StopReason" },
             { "stopreason_1", "CCDchg_StopReason" },
+            { "beginvoltagemv1", "CCDchg_BeginVoltage_mV" },
             { "beginvoltagemv_1", "CCDchg_BeginVoltage_mV" },
+            { "dischargebeginvoltage", "CCDchg_BeginVoltage_mV" },
+            { "dischargebeginvoltagemv", "CCDchg_BeginVoltage_mV" },
+            { "endvoltagemv1", "CCDchg_EndVoltage_mV" },
             { "endvoltagemv_1", "CCDchg_EndVoltage_mV" },
+            { "dischargeendvoltage", "CCDchg_EndVoltage_mV" },
+            { "dischargeendvoltagemv", "CCDchg_EndVoltage_mV" },
+            { "begintime1", "CCDchg_BeginTime" },
             { "begintime_1", "CCDchg_BeginTime" },
+            { "endtime1", "CCDchg_EndTime" },
             { "endtime_1", "CCDchg_EndTime" },
+            { "begincurrentma1", "CCDchg_BeginCurrent_mA" },
             { "begincurrentma_1", "CCDchg_BeginCurrent_mA" },
+            { "dischargebegincurrent", "CCDchg_BeginCurrent_mA" },
+            { "dischargebegincurrentma", "CCDchg_BeginCurrent_mA" },
+            { "endcurrentma1", "CCDchg_EndCurrent_mA" },
             { "endcurrentma_1", "CCDchg_EndCurrent_mA" },
+            { "dischargeendcurrent", "CCDchg_EndCurrent_mA" },
+            { "dischargeendcurrentma", "CCDchg_EndCurrent_mA" },
+
             { "capacitymah", "CCDchg_Capacity_mAh" },
+            { "capacity", "CCDchg_Capacity_mAh" },
             { "capacitancef", "CCDchg_Capacitance_F" },
+            { "capacitance", "CCDchg_Capacitance_F" },
             { "capacitance1f", "CCDchg_Capacitance1_F" },
+            { "capacitance1", "CCDchg_Capacitance1_F" },
             { "capacitancevoltage2mv", "CCDchg_CapacitanceVoltage2_mV" },
+            { "capacitancevoltage2", "CCDchg_CapacitanceVoltage2_mV" },
             { "capacitance2f", "CCDchg_Capacitance2_F" },
+            { "capacitance2", "CCDchg_Capacitance2_F" },
             { "capacitance3f", "CCDchg_Capacitance3_F" },
+            { "capacitance3", "CCDchg_Capacitance3_F" },
             { "capacitance4f", "CCDchg_Capacitance4_F" },
+            { "capacitance4", "CCDchg_Capacitance4_F" },
 
             // --- 3. Rest ---
+            { "worksteptime2", "Rest_WorkstepTime" },
             { "worksteptime_2", "Rest_WorkstepTime" },
+            { "stopreason2", "Rest_StopReason" },
             { "stopreason_2", "Rest_StopReason" },
+            { "beginvoltagemv2", "Rest_BeginVoltage_mV" },
             { "beginvoltagemv_2", "Rest_BeginVoltage_mV" },
-            { "endvoltagemv_2", "Rest_BeginVoltage_mV" },
+            { "endvoltagemv2", "Rest_EndVoltage_mV" },
+            { "endvoltagemv_2", "Rest_EndVoltage_mV" },
+            { "begintime2", "Rest_BeginTime" },
             { "begintime_2", "Rest_BeginTime" },
+            { "endtime2", "Rest_EndTime" },
             { "endtime_2", "Rest_EndTime" },
+            { "begindkvoltagemv1", "Rest_BeginDKVoltage_mV" },
+            { "begindkvoltagemv_1", "Rest_BeginDKVoltage_mV" },
+            { "begindkvoltagemv2", "Rest_BeginDKVoltage_mV" },
             { "begindkvoltagemv_2", "Rest_BeginDKVoltage_mV" },
 
-            // --- Metadata ---
+            // Metadata
             { "filepath", "FilePath" },
             { "importdate", "ImportDate" }
         };
@@ -287,7 +355,22 @@ namespace ImportData.Services
                 else dbTable.Columns.Add(col, typeof(object));
             }
 
-            // Bản đồ vị trí cột Excel theo tên header
+            // Ánh xạ động từ chỉ số cột Excel sang tên cột SQL V2
+            var excelColToSqlCol = new Dictionary<int, string>();
+            for (int c = 0; c < dt.Columns.Count; c++)
+            {
+                string colName = dt.Columns[c].ColumnName;
+                string searchKey = GetSearchKey(colName);
+                if (AliasToSqlColumnMap.TryGetValue(searchKey, out string sqlCol))
+                {
+                    if (!excelColToSqlCol.ContainsKey(c))
+                    {
+                        excelColToSqlCol[c] = sqlCol;
+                    }
+                }
+            }
+
+            // Bản đồ vị trí cột Excel fallback cho getVal nếu không khớp alias
             Dictionary<string, int> colMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             for (int c = 0; c < dt.Columns.Count; c++)
             {
@@ -308,56 +391,47 @@ namespace ImportData.Services
                 DataRow dr = dbTable.NewRow();
                 DataRow sourceRow = dt.Rows[r];
 
+                // 1. Điền thông tin cố định / mặc định
                 dr["EquipmentNumber"] = eqNum;
-                dr["Position"] = getVal("Position", sourceRow);
-                dr["Channel"] = getVal("Channel", sourceRow);
-                dr["TrayID"] = getVal("TrayID", sourceRow);
-                dr["Barcode"] = getVal("barcode", sourceRow);
-
-                // 1. CCCVChg
-                dr["CCCVChg_WorkstepTime"] = getVal("WorkstepTime", sourceRow);
-                dr["CCCVChg_StopReason"] = getVal("StopReason", sourceRow);
-                dr["CCCVChg_BeginVoltage_mV"] = getVal("BeginVoltage(mV)", sourceRow);
-                dr["CCCVChg_EndVoltage_mV"] = getVal("EndVoltage(mV)", sourceRow);
-                dr["CCCVChg_BeginTime"] = getVal("BeginTime", sourceRow);
-                dr["CCCVChg_EndTime"] = getVal("EndTime", sourceRow);
-                dr["CCCVChg_BeginDKVoltage_mV"] = getVal("BeginDKVoltage(mV)", sourceRow);
-                dr["CCCVChg_BeginCurrent_mA"] = getVal("BeginCurrent(mA)", sourceRow);
-                dr["CCCVChg_EndCurrent_mA"] = getVal("EndCurrent(mA)", sourceRow);
-                dr["CCCVChg_EndDKVoltage_mV"] = getVal("EndDKVoltage(mV)", sourceRow);
-
-                // 2. CCDchg
-                dr["CCDchg_WorkstepTime"] = getVal("WorkstepTime_1", sourceRow);
-                dr["CCDchg_StopReason"] = getVal("StopReason_1", sourceRow);
-                dr["CCDchg_BeginVoltage_mV"] = getVal("BeginVoltage(mV)_1", sourceRow);
-                dr["CCDchg_EndVoltage_mV"] = getVal("EndVoltage(mV)_1", sourceRow);
-                dr["CCDchg_BeginTime"] = getVal("BeginTime_1", sourceRow);
-                dr["CCDchg_EndTime"] = getVal("EndTime_1", sourceRow);
-                dr["CCDchg_BeginCurrent_mA"] = getVal("BeginCurrent(mA)_1", sourceRow);
-                if (dr["CCDchg_BeginCurrent_mA"] == DBNull.Value) dr["CCDchg_BeginCurrent_mA"] = getVal("BeginCurrent(mA)", sourceRow);
-                
-                dr["CCDchg_EndCurrent_mA"] = getVal("EndCurrent(mA)_1", sourceRow);
-                if (dr["CCDchg_EndCurrent_mA"] == DBNull.Value) dr["CCDchg_EndCurrent_mA"] = getVal("EndCurrent(mA)", sourceRow);
-
-                dr["CCDchg_Capacity_mAh"] = getVal("Capacity(mAh)", sourceRow);
-                dr["CCDchg_Capacitance_F"] = getVal("Capacitance(F)", sourceRow);
-                dr["CCDchg_Capacitance1_F"] = getVal("Capacitance1(F)", sourceRow);
-                dr["CCDchg_CapacitanceVoltage2_mV"] = getVal("CapacitanceVoltage2(mV)", sourceRow);
-                dr["CCDchg_Capacitance2_F"] = getVal("Capacitance2(F)", sourceRow);
-                dr["CCDchg_Capacitance3_F"] = getVal("Capacitance3(F)", sourceRow);
-                dr["CCDchg_Capacitance4_F"] = getVal("Capacitance4(F)", sourceRow);
-
-                // 3. Rest
-                dr["Rest_WorkstepTime"] = getVal("WorkstepTime_2", sourceRow);
-                dr["Rest_StopReason"] = getVal("StopReason_2", sourceRow);
-                dr["Rest_BeginVoltage_mV"] = getVal("BeginVoltage(mV)_2", sourceRow);
-                dr["Rest_EndVoltage_mV"] = getVal("EndVoltage(mV)_2", sourceRow);
-                dr["Rest_BeginTime"] = getVal("BeginTime_2", sourceRow);
-                dr["Rest_EndTime"] = getVal("EndTime_2", sourceRow);
-                dr["Rest_BeginDKVoltage_mV"] = getVal("BeginDKVoltage(mV)_1", sourceRow);
-
                 dr["FilePath"] = filePath;
                 dr["ImportDate"] = importDate;
+
+                // 2. Điền giá trị từ Excel theo ánh xạ động (Smart Mapping)
+                foreach (var kvp in excelColToSqlCol)
+                {
+                    int excelColIdx = kvp.Key;
+                    string sqlColName = kvp.Value;
+                    var val = sourceRow[excelColIdx];
+                    if (val != null && val != DBNull.Value && !string.IsNullOrWhiteSpace(val.ToString()) && val.ToString() != "---")
+                    {
+                        if (dr[sqlColName] == DBNull.Value || (sqlColName == "EquipmentNumber" && val.ToString() != "Unknown"))
+                        {
+                            dr[sqlColName] = val;
+                        }
+                    }
+                }
+
+                // 3. Fallback điền bổ sung nếu cột vẫn là DBNull (đặc biệt các cột legacy)
+                if (dr["Position"] == DBNull.Value) dr["Position"] = getVal("Position", sourceRow);
+                if (dr["Channel"] == DBNull.Value) dr["Channel"] = getVal("Channel", sourceRow);
+                if (dr["TrayID"] == DBNull.Value) dr["TrayID"] = getVal("TrayID", sourceRow);
+                if (dr["Barcode"] == DBNull.Value) dr["Barcode"] = getVal("barcode", sourceRow);
+
+                if (dr["CCCVChg_WorkstepTime"] == DBNull.Value) dr["CCCVChg_WorkstepTime"] = getVal("WorkstepTime", sourceRow);
+                if (dr["CCCVChg_StopReason"] == DBNull.Value) dr["CCCVChg_StopReason"] = getVal("StopReason", sourceRow);
+                if (dr["CCCVChg_BeginVoltage_mV"] == DBNull.Value) dr["CCCVChg_BeginVoltage_mV"] = getVal("BeginVoltage(mV)", sourceRow);
+                if (dr["CCCVChg_EndVoltage_mV"] == DBNull.Value) dr["CCCVChg_EndVoltage_mV"] = getVal("EndVoltage(mV)", sourceRow);
+                if (dr["CCCVChg_BeginTime"] == DBNull.Value) dr["CCCVChg_BeginTime"] = getVal("BeginTime", sourceRow);
+                if (dr["CCCVChg_EndTime"] == DBNull.Value) dr["CCCVChg_EndTime"] = getVal("EndTime", sourceRow);
+
+                if (dr["CCDchg_WorkstepTime"] == DBNull.Value) dr["CCDchg_WorkstepTime"] = getVal("WorkstepTime_1", sourceRow);
+                if (dr["CCDchg_StopReason"] == DBNull.Value) dr["CCDchg_StopReason"] = getVal("StopReason_1", sourceRow);
+                if (dr["CCDchg_BeginVoltage_mV"] == DBNull.Value) dr["CCDchg_BeginVoltage_mV"] = getVal("BeginVoltage(mV)_1", sourceRow);
+                if (dr["CCDchg_EndVoltage_mV"] == DBNull.Value) dr["CCDchg_EndVoltage_mV"] = getVal("EndVoltage(mV)_1", sourceRow);
+                if (dr["CCDchg_BeginTime"] == DBNull.Value) dr["CCDchg_BeginTime"] = getVal("BeginTime_1", sourceRow);
+                if (dr["CCDchg_EndTime"] == DBNull.Value) dr["CCDchg_EndTime"] = getVal("EndTime_1", sourceRow);
+                if (dr["CCDchg_Capacity_mAh"] == DBNull.Value) dr["CCDchg_Capacity_mAh"] = getVal("Capacity(mAh)", sourceRow);
+                if (dr["CCDchg_Capacitance_F"] == DBNull.Value) dr["CCDchg_Capacitance_F"] = getVal("Capacitance(F)", sourceRow);
 
                 dbTable.Rows.Add(dr);
             }
