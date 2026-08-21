@@ -16,14 +16,17 @@ namespace ImportData.Services
         private readonly Action<string> _logger;
 
         /// <summary>
-        /// Mảng RequiredHeaders: Danh sách tiêu đề cột nhận diện dữ liệu đo đạc (Cả Ver 1 và Ver 2).
+        /// Mảng RequiredHeaders: Danh sách tiêu đề cột nhận diện dữ liệu đo đạc (Cả Ver 1, Ver 2, tiếng Anh và tiếng Trung).
         /// </summary>
         internal static readonly string[] RequiredHeaders = {
             "EquipmentNumber", "DevName", "SorterNum", "SortNum", "TrayID", "StartTime", "BeginTime", "EndTime", 
             "WorkflowCode", "LotNo", "Barcode", "Slot", "Position", "Channel", "Capacity", "Capacitance", 
             "WorkType", "WorkstepTime", "StopReason", "BeginVoltage", "EndVoltage", "BeginCurrent", "EndCurrent",
             "BeginVoltageSD", "ChargeEndCurrent", "DischargeVoltage1", "DischargeVoltage1Time", 
-            "DischargeVoltage2", "DischargeVoltage2Time", "DischargeBeginVoltage", "DischargeBeginCurrent", "NGInfo"
+            "DischargeVoltage2", "DischargeVoltage2Time", "DischargeBeginVoltage", "DischargeBeginCurrent", "NGInfo",
+            // Tiếng Trung:
+            "通道", "位置", "托盘", "托盘id", "电池", "电池id", "条码", "工作时间", "截止原因", "开始电压", "结束电压", 
+            "开始时间", "结束时间", "开始端口电压", "开始电流", "结束电流", "结束端口电压", "容量", "电容", "电容值", "时长"
         };
 
         public ExcelService(Action<string> logger)
@@ -60,10 +63,22 @@ namespace ImportData.Services
                         DataTable selectedTable = null;
                         foreach (DataTable table in ds.Tables)
                         {
-                            if (table.TableName.Contains("AggregateData", StringComparison.OrdinalIgnoreCase) || table.Columns.Count >= 10)
+                            if (table.TableName.Contains("AggregateData", StringComparison.OrdinalIgnoreCase) || 
+                                table.TableName.Contains("综合", StringComparison.OrdinalIgnoreCase))
                             {
                                 selectedTable = table;
                                 break;
+                            }
+                        }
+                        if (selectedTable == null)
+                        {
+                            foreach (DataTable table in ds.Tables)
+                            {
+                                if (table.Columns.Count >= 10)
+                                {
+                                    selectedTable = table;
+                                    break;
+                                }
                             }
                         }
                         if (selectedTable == null) selectedTable = ds.Tables[0];
@@ -76,7 +91,8 @@ namespace ImportData.Services
                             for (int c = 0; c < selectedTable.Columns.Count; c++)
                             {
                                 string val = selectedTable.Rows[r][c]?.ToString()?.ToLower() ?? "";
-                                if (val.Contains("channel") || val.Contains("position") || val.Contains("barcode") || val.Contains("workstep"))
+                                if (val.Contains("channel") || val.Contains("position") || val.Contains("barcode") || val.Contains("workstep") ||
+                                    val.Contains("通道") || val.Contains("位置") || val.Contains("电池") || val.Contains("工作时间") || val.Contains("托盘") || val.Contains("条码"))
                                 {
                                     matchCount++;
                                 }
@@ -91,10 +107,52 @@ namespace ImportData.Services
                         DataTable dt = new DataTable();
                         if (headerRowIdx >= 0)
                         {
+                            // Nhận diện Step Group từ hàng trên Header (nếu có hàng group)
+                            string[] groupPrefixes = new string[selectedTable.Columns.Count];
+                            if (headerRowIdx > 0)
+                            {
+                                int groupRowIdx = headerRowIdx - 1;
+                                string currentGroup = "";
+                                for (int c = 0; c < selectedTable.Columns.Count; c++)
+                                {
+                                    string groupVal = selectedTable.Rows[groupRowIdx][c]?.ToString()?.Trim() ?? "";
+                                    if (!string.IsNullOrEmpty(groupVal))
+                                    {
+                                        string normGroup = groupVal.ToLower();
+                                        if (normGroup.Contains("cccv") || normGroup.Contains("恒流恒压") || normGroup.Contains("充电"))
+                                        {
+                                            currentGroup = "CCCVChg";
+                                        }
+                                        else if (normGroup.Contains("ccd") || normGroup.Contains("恒流放电") || normGroup.Contains("放电"))
+                                        {
+                                            currentGroup = "CCDchg";
+                                        }
+                                        else if (normGroup.Contains("rest") || normGroup.Contains("搁置") || normGroup.Contains("静置"))
+                                        {
+                                            currentGroup = "Rest";
+                                        }
+                                        else if (normGroup.Contains("channel") || normGroup.Contains("通道") || normGroup.Contains("info") || normGroup.Contains("信息"))
+                                        {
+                                            currentGroup = "";
+                                        }
+                                    }
+                                    groupPrefixes[c] = currentGroup;
+                                }
+                            }
+
                             for (int c = 0; c < selectedTable.Columns.Count; c++)
                             {
-                                string colName = selectedTable.Rows[headerRowIdx][c]?.ToString()?.Trim() ?? "";
-                                if (string.IsNullOrEmpty(colName)) colName = $"Col_{c}";
+                                string rawColName = selectedTable.Rows[headerRowIdx][c]?.ToString()?.Trim() ?? "";
+                                if (string.IsNullOrEmpty(rawColName)) rawColName = $"Col_{c}";
+
+                                string prefix = groupPrefixes[c];
+                                string normRaw = NormalizeColumnName(rawColName);
+                                // Không gắn prefix cho các cột thông tin chung (Channel, Position, TrayID, Barcode)
+                                bool isCommonCol = normRaw == "channel" || normRaw == "position" || normRaw == "trayid" || normRaw == "barcode" ||
+                                                   normRaw == "通道" || normRaw == "位置" || normRaw == "托盘id" || normRaw == "托盘" || normRaw == "电池id" || normRaw == "条码";
+
+                                string colName = (!string.IsNullOrEmpty(prefix) && !isCommonCol) ? $"{prefix}_{rawColName}" : rawColName;
+
                                 string finalColName = colName;
                                 int dup = 1;
                                 while (dt.Columns.Contains(finalColName)) finalColName = $"{colName}_{dup++}";
@@ -176,8 +234,8 @@ namespace ImportData.Services
                 string colName = NormalizeColumnName(dc.ColumnName);
                 foreach (var required in RequiredHeaders)
                 {
-                    string reqName = required.ToLower().Replace("_", "");
-                    if (colName.Contains(reqName) || reqName.Contains(colName))
+                    string reqName = NormalizeColumnName(required);
+                    if (!string.IsNullOrEmpty(reqName) && (colName.Contains(reqName) || reqName.Contains(colName)))
                     {
                         matchCount++;
                         break;

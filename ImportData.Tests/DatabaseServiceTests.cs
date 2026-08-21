@@ -43,6 +43,16 @@ namespace ImportData.Tests
         [InlineData("endvoltagemv2", "Rest_EndVoltage_mV")]
         [InlineData("capacitymah", "CCDchg_Capacity_mAh")]
         [InlineData("capacitancef", "CCDchg_Capacitance_F")]
+        [InlineData("通道", "Channel")]
+        [InlineData("位置", "Position")]
+        [InlineData("托盘id", "TrayID")]
+        [InlineData("电池id", "Barcode")]
+        [InlineData("cccvchg工作时间", "CCCVChg_WorkstepTime")]
+        [InlineData("ccdchg工作时间", "CCDchg_WorkstepTime")]
+        [InlineData("rest工作时间", "Rest_WorkstepTime")]
+        [InlineData("ccdchg容量mah", "CCDchg_Capacity_mAh")]
+        [InlineData("ccdchg电容f", "CCDchg_Capacitance_F")]
+        [InlineData("rest开始端口电压mv", "Rest_BeginDKVoltage_mV")]
         public void Test_AliasToSqlColumnMap_CorrectMapping(string alias, string expectedSqlColumn)
         {
             bool hasMapping = DatabaseService.AliasToSqlColumnMap.TryGetValue(alias, out string? sqlCol);
@@ -293,6 +303,165 @@ namespace ImportData.Tests
                         }
                     }
                 }
+            }
+        }
+
+        [Fact]
+        public async Task Test_Import_Chinese2Step_2_21_13_14_11()
+        {
+            string filePath = @"D:\ExcelData\2026-08-21\2#21_13.14.11\2#21_13.14.11.xlsx";
+            if (!File.Exists(filePath)) return;
+
+            var config = new AppConfig();
+            config.Load();
+            var dbService = new DatabaseService(config, msg => _output.WriteLine(msg));
+            var excelService = new ExcelService(msg => _output.WriteLine(msg));
+
+            // 1. Read Excel
+            var dt = excelService.ReadExcelFile(filePath);
+            Assert.NotNull(dt);
+            Assert.True(dt.Rows.Count > 0);
+            _output.WriteLine($"Read {dt.Rows.Count} rows from {filePath}");
+
+            // 2. Import into SQL Server
+            int rowsInserted = await dbService.ExecuteImportBatchAsync(dt, Path.GetFileName(filePath), filePath);
+            _output.WriteLine($"Rows inserted: {rowsInserted}");
+            Assert.True(rowsInserted > 0);
+
+            // 3. Verify in SQL Server
+            using (var conn = new SqlConnection(config.ConnectionString))
+            {
+                await conn.OpenAsync();
+                
+                // Verify History
+                using (var cmd = new SqlCommand("SELECT Status, RowsInserted FROM ExcelImportHistory_V2 WHERE FilePath = @path", conn))
+                {
+                    cmd.Parameters.AddWithValue("@path", filePath);
+                    using (var r = await cmd.ExecuteReaderAsync())
+                    {
+                        Assert.True(await r.ReadAsync(), "History record not found!");
+                        Assert.Equal("Success", r["Status"]?.ToString());
+                        Assert.Equal(rowsInserted, Convert.ToInt32(r["RowsInserted"]));
+                    }
+                }
+
+                // Verify Data rows
+                using (var cmd = new SqlCommand("SELECT TOP 5 Position, Channel, CCDchg_Capacity_mAh, CCDchg_BeginVoltage_mV, CCDchg_EndVoltage_mV, Rest_BeginVoltage_mV FROM SortingDataImportExcel_V2 WHERE FilePath = @path", conn))
+                {
+                    cmd.Parameters.AddWithValue("@path", filePath);
+                    using (var r = await cmd.ExecuteReaderAsync())
+                    {
+                        int rowCount = 0;
+                        while (await r.ReadAsync())
+                        {
+                            rowCount++;
+                            _output.WriteLine($"Sample Row: Pos={r["Position"]}, Ch={r["Channel"]}, Cap={r["CCDchg_Capacity_mAh"]}, CCDchg_BeginV={r["CCDchg_BeginVoltage_mV"]}, CCDchg_EndV={r["CCDchg_EndVoltage_mV"]}, Rest_BeginV={r["Rest_BeginVoltage_mV"]}");
+                            Assert.False(r.IsDBNull(0), "Position should not be null");
+                            Assert.False(r.IsDBNull(1), "Channel should not be null");
+                            Assert.False(r.IsDBNull(2), "CCDchg_Capacity_mAh should not be null");
+                        }
+                        Assert.True(rowCount > 0, "No data rows found in SortingDataImportExcel_V2");
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public async Task Test_Audit_Every_Single_Cell_2_21_13_14_11()
+        {
+            string filePath = @"D:\ExcelData\2026-08-21\2#21_13.14.11\2#21_13.14.11.xlsx";
+            if (!File.Exists(filePath)) return;
+
+            var config = new AppConfig();
+            config.Load();
+            var excelService = new ExcelService(msg => _output.WriteLine(msg));
+
+            var dt = excelService.ReadExcelFile(filePath);
+            Assert.NotNull(dt);
+            Assert.Equal(320, dt.Rows.Count);
+
+            using (var conn = new SqlConnection(config.ConnectionString))
+            {
+                await conn.OpenAsync();
+                
+                // Read all DB rows into dictionary by Position + Channel
+                var dbDict = new Dictionary<string, Dictionary<string, object?>>();
+                using (var cmd = new SqlCommand("SELECT * FROM SortingDataImportExcel_V2 WHERE FilePath = @path", conn))
+                {
+                    cmd.Parameters.AddWithValue("@path", filePath);
+                    using (var r = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await r.ReadAsync())
+                        {
+                            string pos = r["Position"]?.ToString() ?? "";
+                            string ch = r["Channel"]?.ToString() ?? "";
+                            string key = $"{pos}_{ch}";
+                            
+                            var rowDict = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+                            for (int i = 0; i < r.FieldCount; i++)
+                            {
+                                rowDict[r.GetName(i)] = r.IsDBNull(i) ? null : r.GetValue(i);
+                            }
+                            dbDict[key] = rowDict;
+                        }
+                    }
+                }
+
+                Assert.Equal(320, dbDict.Count);
+
+                int totalCheckedCells = 0;
+                int matchedNonNullCells = 0;
+                int mismatches = 0;
+
+                for (int r = 0; r < dt.Rows.Count; r++)
+                {
+                    DataRow excelRow = dt.Rows[r];
+                    string pos = (dt.Columns.Contains("Position") ? excelRow["Position"] : (dt.Columns.Contains("位置") ? excelRow["位置"] : excelRow[1]))?.ToString()?.Trim() ?? "";
+                    string ch = (dt.Columns.Contains("Channel") ? excelRow["Channel"] : (dt.Columns.Contains("通道") ? excelRow["通道"] : excelRow[0]))?.ToString()?.Trim() ?? "";
+                    string rowKey = $"{pos}_{ch}";
+
+                    Assert.True(dbDict.ContainsKey(rowKey), $"Row {r} with key {rowKey} not found in DB!");
+                    var dbRow = dbDict[rowKey];
+
+                    for (int c = 0; c < dt.Columns.Count; c++)
+                    {
+                        string colName = dt.Columns[c].ColumnName;
+                        string searchKey = DatabaseService.GetSearchKey(colName);
+                        if (DatabaseService.AliasToSqlColumnMap.TryGetValue(searchKey, out string? sqlCol) && !string.IsNullOrEmpty(sqlCol))
+                        {
+                            totalCheckedCells++;
+                            object excelVal = excelRow[c];
+                            string excelStr = excelVal?.ToString()?.Trim() ?? "";
+                            if (excelStr == "---") excelStr = "";
+
+                            object? dbVal = dbRow.ContainsKey(sqlCol) ? dbRow[sqlCol] : null;
+                            string dbStr = dbVal?.ToString()?.Trim() ?? "";
+
+                            if (!string.IsNullOrEmpty(excelStr))
+                            {
+                                if (string.IsNullOrEmpty(dbStr))
+                                {
+                                    _output.WriteLine($"MISMATCH at row {rowKey}, col {colName} -> SQL {sqlCol}: Excel='{excelStr}' but DB is NULL/empty");
+                                    mismatches++;
+                                }
+                                else
+                                {
+                                    matchedNonNullCells++;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                _output.WriteLine($"\n=== 100% CELL AUDIT RESULT ===");
+                _output.WriteLine($"Total Excel Rows Checked: {dt.Rows.Count}");
+                _output.WriteLine($"Total DB Rows Checked: {dbDict.Count}");
+                _output.WriteLine($"Total Column Cells Checked: {totalCheckedCells}");
+                _output.WriteLine($"Total Non-Null Cells Matched in DB: {matchedNonNullCells}");
+                _output.WriteLine($"Total Mismatches / Missing Values: {mismatches}");
+
+                Assert.Equal(0, mismatches);
+                Assert.True(matchedNonNullCells > 0);
             }
         }
     }

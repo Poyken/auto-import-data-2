@@ -204,5 +204,114 @@ namespace ImportData.Tests
             Assert.Equal("Value3", dt.Rows[1]["Col1"]);
             Assert.Equal(DBNull.Value, dt.Rows[1]["Col2"]);
         }
+
+        [Fact]
+        public void Test_ReadExcelFile_Chinese2Step_File()
+        {
+            string filePath = @"D:\ExcelData\2026-08-21\2#21_13.14.11\2#21_13.14.11.xlsx";
+            if (!File.Exists(filePath)) return;
+
+            DataTable dt = _excelService.ReadExcelFile(filePath);
+            Assert.NotNull(dt);
+            Assert.True(dt.Rows.Count > 0);
+            Assert.True(_excelService.ValidateHeaders(dt));
+
+            // Verify that CCDchg and Rest columns are mapped properly
+            bool hasChannel = false;
+            bool hasPosition = false;
+            bool hasCcdchgCapacity = false;
+            bool hasRestVoltage = false;
+
+            for (int c = 0; c < dt.Columns.Count; c++)
+            {
+                string col = dt.Columns[c].ColumnName;
+                string key = DatabaseService.GetSearchKey(col);
+                if (DatabaseService.AliasToSqlColumnMap.TryGetValue(key, out string? sqlCol))
+                {
+                    if (sqlCol == "Channel") hasChannel = true;
+                    if (sqlCol == "Position") hasPosition = true;
+                    if (sqlCol == "CCDchg_Capacity_mAh") hasCcdchgCapacity = true;
+                    if (sqlCol == "Rest_BeginVoltage_mV") hasRestVoltage = true;
+                }
+            }
+
+            Assert.True(hasChannel, "Missing Channel column");
+            Assert.True(hasPosition, "Missing Position column");
+            Assert.True(hasCcdchgCapacity, "Missing CCDchg_Capacity_mAh column");
+            Assert.True(hasRestVoltage, "Missing Rest_BeginVoltage_mV column");
+        }
+
+        [Fact]
+        public void Test_ReadExcelFile_Chinese3Step_File()
+        {
+            string filePath = @"D:\ExcelData\2026-08-18\1#18_08.52.44\1#18_08.52.44.xlsx";
+            if (!File.Exists(filePath)) return;
+
+            DataTable dt = _excelService.ReadExcelFile(filePath);
+            Assert.NotNull(dt);
+            Assert.True(dt.Rows.Count > 0);
+            Assert.True(_excelService.ValidateHeaders(dt));
+
+            bool hasCccvChg = false;
+            bool hasCcdchg = false;
+            bool hasRest = false;
+
+            for (int c = 0; c < dt.Columns.Count; c++)
+            {
+                string col = dt.Columns[c].ColumnName;
+                string key = DatabaseService.GetSearchKey(col);
+                if (DatabaseService.AliasToSqlColumnMap.TryGetValue(key, out string? sqlCol))
+                {
+                    if (sqlCol?.StartsWith("CCCVChg_") == true) hasCccvChg = true;
+                    if (sqlCol?.StartsWith("CCDchg_") == true) hasCcdchg = true;
+                    if (sqlCol?.StartsWith("Rest_") == true) hasRest = true;
+                }
+            }
+
+            Assert.True(hasCccvChg, "Missing CCCVChg columns");
+            Assert.True(hasCcdchg, "Missing CCDchg columns");
+            Assert.True(hasRest, "Missing Rest columns");
+        }
+
+        [Fact]
+        public void Test_ValidateHeaders_ChineseHeaders()
+        {
+            DataTable dt = new DataTable();
+            dt.Columns.Add("通道");
+            dt.Columns.Add("位置");
+            dt.Columns.Add("电池ID");
+            dt.Columns.Add("CCDchg_容量(mAh)");
+            dt.Columns.Add("Rest_开始电压(mV)");
+
+            Assert.True(_excelService.ValidateHeaders(dt));
+        }
+
+        [Fact]
+        public void Test_ReadAll503FilesInDExcelData()
+        {
+            if (!Directory.Exists(@"D:\ExcelData")) return;
+
+            var files = Directory.GetFiles(@"D:\ExcelData", "*.xlsx", SearchOption.AllDirectories)
+                .Where(f => {
+                    string name = Path.GetFileName(f);
+                    return !name.StartsWith("~") && !name.Contains("~$") && !name.StartsWith("$");
+                })
+                .ToArray();
+
+            int failedCount = 0;
+            var failedFiles = new List<string>();
+
+            foreach (var file in files)
+            {
+                var dt = _excelService.ReadExcelFile(file);
+                if (dt == null || dt.Rows.Count == 0 || !_excelService.ValidateHeaders(dt))
+                {
+                    failedCount++;
+                    failedFiles.Add(file);
+                }
+            }
+
+            Assert.True(failedCount == 0, $"Failed reading {failedCount} files: {string.Join(", ", failedFiles.Take(5))}");
+        }
     }
 }
