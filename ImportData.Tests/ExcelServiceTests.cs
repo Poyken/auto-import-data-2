@@ -22,7 +22,7 @@ namespace ImportData.Tests
             {
                 currentDir = Path.GetDirectoryName(currentDir);
             }
-            _workspaceDir = currentDir ?? @"c:\Users\User Vinatech.DESKTOP-RJJSEQU\Desktop\auto-import-data-2";
+            _workspaceDir = currentDir ?? @"c:\Users\User Vinatech.DESKTOP-RJJSEQU\Desktop\01_PROJECTS\auto-import-data-2";
         }
 
         [Fact]
